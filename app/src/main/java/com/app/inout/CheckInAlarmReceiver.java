@@ -24,6 +24,12 @@ public class CheckInAlarmReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Alarm received: Preparing shift start notification");
 
+        // Extract the exact type of alarm triggered [2]
+        String reminderType = intent.getStringExtra("reminder_type");
+        if (reminderType == null) {
+            reminderType = "about_to_check_in"; // Standard fallback
+        }
+
         try {
             // 1. Create high-importance channel (Required for Android 8.0+)
             createNotificationChannel(context);
@@ -39,11 +45,26 @@ public class CheckInAlarmReceiver extends BroadcastReceiver {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
 
+            // Determine dynamic titles and message content based on the alarm state [2]
+            String title = "Shift Reminder";
+            String content = "Please check your daily attendance requirements.";
+
+            if ("about_to_check_in".equals(reminderType)) {
+                title = "Shift Starting Soon!";
+                content = "Your check-in window opens in 1 minute. Please prepare to check in.";
+            } else if ("late_check_in".equals(reminderType)) {
+                title = "Late Check-In Warning!";
+                content = "You are late. Please request Resume from options menu to enable check-in.";
+            } else if ("about_to_check_out".equals(reminderType)) {
+                title = "Shift Ending Soon!";
+                content = "Your check-out window opens in 2 minutes. Please prepare to check out.";
+            }
+
             // 3. Build notification properties with high priority for heads-up alert
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                     .setSmallIcon(R.drawable.inout) // Standard launcher drawable resource
-                    .setContentTitle("Shift Starting Soon!")
-                    .setContentText("Your check-in window opens in 1 minute. Please open the app and prepare to check in.")
+                    .setContentTitle(title)
+                    .setContentText(content)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true);
@@ -53,6 +74,16 @@ public class CheckInAlarmReceiver extends BroadcastReceiver {
             if (notificationManager != null) {
                 notificationManager.notify(NOTIFICATION_ID, builder.build());
             }
+
+            // 5. Safely launch background voice engine service to speak [3]
+            try {
+                Intent serviceIntent = new Intent(context, CheckInVoiceService.class);
+                serviceIntent.putExtra("reminder_type", reminderType);
+                context.startService(serviceIntent);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to start background spoken voice engine service", e);
+            }
+
         } catch (Exception e) {
             Log.e(TAG, "Failed to build or send near-time shift reminder", e);
         }
