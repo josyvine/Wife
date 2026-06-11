@@ -1136,6 +1136,20 @@ public class MainActivity extends AppCompatActivity implements VoiceAssistantBot
                     }
 
                     if (highestConfidencePattern != null) {
+                        // Populate timestamps for coordinate points (Temporal Stabilization)
+                        for (ChartPattern.Point pt : highestConfidencePattern.getPoints()) {
+                            if (pt.getIndex() >= 0 && pt.getIndex() < mCandles.size()) {
+                                pt.setTimestamp(mCandles.get(pt.getIndex()).timestamp);
+                            }
+                        }
+                        if (highestConfidencePattern.getNecklinePoints() != null) {
+                            for (ChartPattern.Point pt : highestConfidencePattern.getNecklinePoints()) {
+                                if (pt.getIndex() >= 0 && pt.getIndex() < mCandles.size()) {
+                                    pt.setTimestamp(mCandles.get(pt.getIndex()).timestamp);
+                                }
+                            }
+                        }
+
                         List<ChartPattern> patternWrapper = new ArrayList<>();
                         patternWrapper.add(highestConfidencePattern);
 
