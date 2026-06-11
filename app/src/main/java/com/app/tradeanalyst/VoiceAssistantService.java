@@ -37,6 +37,9 @@ public class VoiceAssistantService extends Service {
     private AppDatabase mDb;
     private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private ServiceListener mListener;
+    
+    // Persistent state tracker [1]
+    private boolean mIsSessionActive = false;
 
     public interface ServiceListener {
         void onLiveWebSocketConnected();
@@ -51,6 +54,22 @@ public class VoiceAssistantService extends Service {
         public VoiceAssistantService getService() {
             return VoiceAssistantService.this;
         }
+    }
+
+    // Public getter to expose session state to bound context [1]
+    public boolean isSessionActive() {
+        return mIsSessionActive;
+    }
+
+    // Immediate foreground transition to avoid background start restrictions [2]
+    public void startForegroundSession() {
+        startForegroundServiceNotification();
+    }
+
+    // Direct termination handler [2]
+    public void stopForegroundSession() {
+        mIsSessionActive = false;
+        stopForeground(true);
     }
 
     @Override
@@ -198,6 +217,7 @@ public class VoiceAssistantService extends Service {
 
         @JavascriptInterface
         public void onLiveWebSocketConnected() {
+            mIsSessionActive = true; // Set active [1]
             startForegroundServiceNotification();
             if (mListener != null) {
                 mListener.onLiveWebSocketConnected();
@@ -206,6 +226,7 @@ public class VoiceAssistantService extends Service {
 
         @JavascriptInterface
         public void onLiveWebSocketDisconnected(String reason) {
+            mIsSessionActive = false; // Set inactive [1]
             stopForeground(true);
             if (mListener != null) {
                 mListener.onLiveWebSocketDisconnected(reason);
