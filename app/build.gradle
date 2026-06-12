@@ -10,7 +10,6 @@ plugins {
   alias(libs.plugins.kotlin.compose)        // Adopted from Reference Gradle
   alias(libs.plugins.google.devtools.ksp)    // Adopted from Reference Gradle
   alias(libs.plugins.roborazzi)              // Adopted from Reference Gradle
-  alias(libs.plugins.secrets)                // Kept from New Gradle
 }
 
 android {
@@ -76,11 +75,6 @@ android {
     viewBinding true                         // Kept from New Gradle
     buildConfig true
   }
-}
-
-// Configure the Secrets Gradle Plugin to use .env file
-secrets {
-  propertiesFileName = ".env"
 }
 
 dependencies {
