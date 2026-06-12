@@ -1,131 +1,178 @@
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
 
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.secrets)
+  alias(libs.plugins.kotlin.compose)        // Adopted from Reference Gradle
+  alias(libs.plugins.google.devtools.ksp)    // Adopted from Reference Gradle
+  alias(libs.plugins.roborazzi)              // Adopted from Reference Gradle
+  alias(libs.plugins.secrets)                // Kept from New Gradle
 }
 
 android {
-  namespace = "com.wife.app"
-  compileSdk = 35
+  namespace "com.wife.app"
+  compileSdk 36                              // Adopted from Reference Gradle (changed from 35)
 
   defaultConfig {
-    applicationId = "com.wife.app"
-    minSdk = 28
-    targetSdk = 35
-    versionCode = 1
-    versionName = "1.0"
+    applicationId "com.wife.app"
+    minSdk 24                                // Adopted from Reference Gradle (changed from 28)
+    targetSdk 36                             // Adopted from Reference Gradle (changed from 35)
+    versionCode 1
+    versionName "1.0"
 
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+    release {
+      // Keystore logic adapted from Reference Gradle (with environment variables removed)
+      storeFile file("${rootDir}/my-upload-key.jks")
+      storePassword "PLACEHOLDER_STORE_PASSWORD"
+      
+      // Alias set to "wife"
+      keyAlias "wife"
+      keyPassword "PLACEHOLDER_KEY_PASSWORD"
     }
     create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
+      storeFile file("${rootDir}/debug.keystore")
+      storePassword "android"
+      keyAlias "androiddebugkey"
+      keyPassword "android"
     }
   }
 
   buildTypes {
     release {
-      isCrunchPngs = false
-      isMinifyEnabled = false
-      isShrinkResources = false
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("debugConfig")
+      crunchPngs = false
+      minifyEnabled false
+      shrinkResources false
+      proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+      signingConfig signingConfigs.release   // Correctly binds release to release signing
     }
     debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
-      isMinifyEnabled = false
-      isShrinkResources = false
+      signingConfig signingConfigs.debugConfig
+      minifyEnabled false
+      shrinkResources false
     }
   }
   compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility JavaVersion.VERSION_11 // Adopted from Reference Gradle (changed from 17)
+    targetCompatibility JavaVersion.VERSION_11 // Adopted from Reference Gradle (changed from 17)
   }
   buildFeatures {
-    viewBinding = true
-    buildConfig = true
+    compose true                             // Adopted from Reference Gradle
+    viewBinding true                         // Kept from New Gradle
+    buildConfig true
   }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
-// to match the convention used in Web projects.
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
 }
 
 dependencies {
-  implementation("androidx.appcompat:appcompat:1.7.0")
-  implementation("com.google.android.material:material:1.12.0")
-  implementation("androidx.constraintlayout:constraintlayout:2.2.0")
-  implementation("androidx.recyclerview:recyclerview:1.3.2")
+  // Adopted exact Version Catalog dependency list and commenting structure from Reference Gradle
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(platform(libs.firebase.bom))
+  // implementation(libs.accompanist.permissions)
+  // implementation(libs.androidx.activity.compose)
+  // implementation(libs.androidx.camera.camera2)
+  // implementation(libs.androidx.camera.core)
+  // implementation(libs.androidx.camera.lifecycle)
+  // implementation(libs.androidx.camera.view)
+  implementation(libs.androidx.compose.material.icons.core)
+  // implementation(libs.androidx.compose.material.icons.extended)
+  implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.compose.ui.graphics)
+  implementation(libs.androidx.compose.ui.tooling.preview)
+  implementation(libs.androidx.core.ktx)
+  // implementation(libs.androidx.datastore.preferences)
+  implementation(libs.androidx.lifecycle.runtime.compose)
+  implementation(libs.androidx.lifecycle.runtime.ktx)
+  implementation(libs.androidx.lifecycle.viewmodel.compose)
+  // implementation(libs.androidx.navigation.compose)
+  implementation(libs.androidx.room.ktx)
+  implementation(libs.androidx.room.runtime)
+  // implementation(libs.coil.compose)
+  implementation(libs.converter.moshi)
+  // implementation(libs.firebase.ai)
+  implementation(libs.kotlinx.coroutines.android)
+  implementation(libs.kotlinx.coroutines.core)
+  implementation(libs.logging.interceptor)
+  implementation(libs.moshi.kotlin)
+  implementation(libs.okhttp)
+  // implementation(libs.play.services.location)
+  implementation(libs.retrofit)
+  implementation(libs.gson)
+  implementation(libs.converter.gson)
   
-  // Room database (Java annotationProcessor style)
-  implementation("androidx.room:room-runtime:2.6.1")
-  annotationProcessor("androidx.room:room-compiler:2.6.1")
+  testImplementation(libs.androidx.compose.ui.test.junit4)
+  testImplementation(libs.androidx.core)
+  testImplementation(libs.androidx.junit)
+  testImplementation(libs.junit)
+  testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.robolectric)
+  testImplementation(libs.roborazzi)
+  testImplementation(libs.roborazzi.compose)
+  testImplementation(libs.roborazzi.junit.rule)
   
-  // CameraX
-  implementation("androidx.camera:camera-core:1.3.4")
-  implementation("androidx.camera:camera-camera2:1.3.4")
-  implementation("androidx.camera:camera-lifecycle:1.3.4")
-  implementation("androidx.camera:camera-view:1.3.4")
-
-  // Glide
-  implementation("com.github.bumptech.glide:glide:4.16.0")
-  annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
-
-  // JSON Parser
-  implementation("com.google.code.gson:gson:2.10.1")
-
-  // Testing
-  testImplementation("junit:junit:4.13.2")
-  androidTestImplementation("androidx.test.ext:junit:1.2.1")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+  androidTestImplementation(libs.androidx.espresso.core)
+  androidTestImplementation(libs.androidx.junit)
+  androidTestImplementation(libs.androidx.runner)
+  
+  debugImplementation(libs.androidx.compose.ui.test.manifest)
+  debugImplementation(libs.androidx.compose.ui.tooling)
+  
+  // Replaced legacy annotation processor with KSP dynamic methods from Reference Gradle
+  "ksp"(libs.androidx.room.compiler)
+  "ksp"(libs.moshi.kotlin.codegen)
+  
+  implementation(libs.androidx.webkit)
+  implementation(libs.androidx.swiperefreshlayout)
+  implementation(libs.material)
 }
 
 tasks.register("copyApkToBuildOutputs") {
     dependsOn("assembleDebug")
     doLast {
-        val srcFile = file("${layout.buildDirectory.get()}/outputs/apk/debug/app-debug.apk")
-        val destFile = file("${rootDir}/.build-outputs/app-debug.apk")
-        val rootDestFile1 = file("${rootDir}/app-debug.apk")
-        val rootDestFile2 = file("${rootDir}/WifeConsole.apk")
-        val zipDestFile = file("${rootDir}/WifeConsole.zip")
+        // Safe and robust path extraction avoiding interpolation errors
+        def srcFile = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk").get().asFile
+        def destFile = file("${rootDir}/.build-outputs/app-debug.apk")
+        def rootDestFile1 = file("${rootDir}/app-debug.apk")
+        def rootDestFile2 = file("${rootDir}/WifeConsole.apk")
+        def zipDestFile = file("${rootDir}/WifeConsole.zip")
         
         if (srcFile.exists()) {
             destFile.parentFile.mkdirs()
-            srcFile.copyTo(destFile, overwrite = true)
-            srcFile.copyTo(rootDestFile1, overwrite = true)
-            srcFile.copyTo(rootDestFile2, overwrite = true)
+            
+            // Platform-independent and clean copy utilizing Java NIO
+            Files.copy(srcFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(srcFile.toPath(), rootDestFile1.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(srcFile.toPath(), rootDestFile2.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            
             println("APK successfully copied to build outputs: $destFile (${destFile.length()} bytes)")
             println("APK successfully copied to root: $rootDestFile1 (${rootDestFile1.length()} bytes)")
             println("APK successfully copied to root: $rootDestFile2 (${rootDestFile2.length()} bytes)")
             
-            // Re-package the authentic APK into a ZIP called WifeConsole.zip using explicit stream objects
-            val fos = FileOutputStream(zipDestFile)
-            val zos = ZipOutputStream(fos)
+            // Re-package the authentic APK into a ZIP called WifeConsole.zip using stream objects
+            def fos = new FileOutputStream(zipDestFile)
+            def zos = new ZipOutputStream(fos)
             try {
-                val entry = ZipEntry("WifeConsole.apk")
+                def entry = new ZipEntry("WifeConsole.apk")
                 zos.putNextEntry(entry)
-                val fis = FileInputStream(srcFile)
+                def fis = new FileInputStream(srcFile)
                 try {
-                    val buffer = ByteArray(4096)
-                    var bytesRead = fis.read(buffer)
+                    byte[] buffer = new byte[4096] // Strongly typed array to avoid Groovy evaluation parser bugs
+                    def bytesRead = fis.read(buffer)
                     while (bytesRead != -1) {
                         zos.write(buffer, 0, bytesRead)
                         bytesRead = fis.read(buffer)
@@ -144,4 +191,3 @@ tasks.register("copyApkToBuildOutputs") {
         }
     }
 }
-
